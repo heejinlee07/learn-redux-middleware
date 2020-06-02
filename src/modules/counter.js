@@ -9,6 +9,14 @@ const DECREASE = "DECREASE";
 export const increase = () => ({ type: INCREASE });
 export const decrease = () => ({ type: DECREASE });
 
+//thunk함수
+export const increaseAsync = () => (dispatch) => {
+  setTimeout(() => dispatch(increase()), 1000);
+};
+export const decreaseAsync = () => (dispatch) => {
+  setTimeout(() => dispatch(decrease()), 1000);
+};
+
 // 초깃값 (상태가 객체가 아니라 그냥 숫자여도 상관 없다.
 const initialState = 0;
 
@@ -23,3 +31,5 @@ export default function counter(state = initialState, action) {
       return state;
   }
 }
+
+//thunk함수: 액션의 디스패치가 1초씩 딜레이.
