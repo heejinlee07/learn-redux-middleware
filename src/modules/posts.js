@@ -4,7 +4,7 @@
 
 //api/posts안의 모든 함수 불러오기
 import * as postsAPI from "../api/posts";
-import { reducerUtils, createPromiseThunk } from "../lib/asyncUtils";
+import { reducerUtils, createPromiseThunk, handleAsyncActions } from "../lib/asyncUtils";
 
 //TODO: action 정의
 // 각 api마다 요청 하나당 action을 세개씩 만든다고 생각할 것.
@@ -52,44 +52,68 @@ const initialState = {
   post: reducerUtils.initial(),
 };
 
+const getPostsReducer = handleAsyncActions(GET_POSTS, "posts");
+const getPostReducer = handleAsyncActions(GET_POST, "post");
+
 //리듀서
 // state의 초기값을 설정하지 않으면 undefined가 나온다.
 // 액션 객체를 전달받아 업데이트하는 역할을 한다.
+// asyncUtils에 만들어둔 handleAsyncActions를 불러와서 return하는데,
+// type과 key를 인수로 넣어서 전달한다.
+//handleAsyncActions는 인수를 받아서 각각의 case에 맞게 액션을 처리한다.
 export default function posts(state = initialState, action) {
   switch (action.type) {
     case GET_POSTS:
-      return {
-        ...state,
-        posts: reducerUtils.loading(),
-        //만약 기존의 상태에 들어있던 값을 null로 바꾸지 않고
-        //유지하고 싶다면, state.posts.data를 인수로 넣어준다.
-      };
     case GET_POSTS_SUCCESS:
-      return {
-        ...state,
-        posts: reducerUtils.success(action.payload),
-      };
     case GET_POSTS_ERROR:
-      return {
-        ...state,
-        posts: reducerUtils.error(action.payload),
-      };
+      return getPostsReducer(state, action);
     case GET_POST:
-      return {
-        ...state,
-        post: reducerUtils.loading(),
-      };
     case GET_POST_SUCCESS:
-      return {
-        ...state,
-        post: reducerUtils.success(action.payload),
-      };
     case GET_POST_ERROR:
-      return {
-        ...state,
-        post: reducerUtils.error(action.payload),
-      };
+      return getPostReducer(state, action);
     default:
       return state;
   }
 }
+
+// 리팩토링 이전
+// export default function posts(state = initialState, action) {
+//   switch (action.type) {
+//     case GET_POSTS:
+//       return {
+//         ...state,
+//         posts: reducerUtils.loading(),
+//         //만약 기존의 상태에 들어있던 값을 null로 바꾸지 않고
+//         //유지하고 싶다면, state.posts.data를 인수로 넣어준다.
+//       };
+//     case GET_POSTS_SUCCESS:
+//       return {
+//         ...state,
+//         posts: reducerUtils.success(action.payload),
+//       };
+//     case GET_POSTS_ERROR:
+//       return {
+//         ...state,
+//         posts: reducerUtils.error(action.payload),
+//       };
+//     case GET_POST:
+//       return {
+//         ...state,
+//         post: reducerUtils.loading(),
+//       };
+//     case GET_POST_SUCCESS:
+//       return {
+//         ...state,
+//         post: reducerUtils.success(action.payload),
+//       };
+//     case GET_POST_ERROR:
+//       return {
+//         ...state,
+//         post: reducerUtils.error(action.payload),
+//       };
+//     default:
+//       return state;
+//   }
+// }
+
+// redux thunk는 액션을 보낼 때 순수 자바스크립트 객체가 아닌 함수도 보낼 수 있게 해준다.

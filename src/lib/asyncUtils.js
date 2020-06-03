@@ -37,7 +37,7 @@ export const createPromiseThunk = (type, promiseCreator) => {
 
 export const reducerUtils = {
   // posts 모듈에 있던 initialData
-  // 초기상채
+  // 초기상태 설정과 액션 타입 설정에 대한 함수
   initial: (initialData = null) => ({
     loading: false,
     data: initialData,
@@ -64,4 +64,31 @@ export const reducerUtils = {
     data: null,
     error,
   }),
+};
+
+//비동기 관련 액션 처리 리듀서
+//type은 액션의 타입을 뜻하고, key는 상태의 key(ex.post,posts)를 뜻함.
+export const handleAsyncActions = (type, key) => {
+  const [SUCCESS, ERROR] = [`${type}_SUCCESS`, `${type}_ERROR`];
+  return (state, action) => {
+    switch (action.type) {
+      case type:
+        return {
+          ...state,
+          [key]: reducerUtils.loading(),
+        };
+      case SUCCESS:
+        return {
+          ...state,
+          [key]: reducerUtils.success(action.payload),
+        };
+      case ERROR:
+        return {
+          ...state,
+          [key]: reducerUtils.error(action.payload),
+        };
+      default:
+        return state;
+    }
+  };
 };
