@@ -30,7 +30,7 @@ export const getPosts = async () => {
 
 //id로 포스트를 조회하는 비동기 함수
 //0.5초 쉰 후, 파라미터로 받은 id랑 동일한 post를 반환
-export const getPostsById = async (id) => {
+export const getPostById = async (id) => {
   await sleep(500);
   return posts.find((post) => post.id === id);
 };

@@ -7,7 +7,7 @@ function PostListContainer() {
   //useSelector로 data, loading, error조회
   const { data, loading, error } = useSelector((state) => state.posts.posts);
   /**
-   * rootReducer안에 있는 posts의 initalState의 posts값
+   * ReducerUtils안에 있는 posts의 initalState의 posts값
    * 즉, data, loading, error 값이 있는 객체를 조회
    */
 
