@@ -19,7 +19,21 @@ function PostListContainer() {
     dispatch(getPosts());
   }, [dispatch]);
 
-  if (loading) return <div>로딩중...</div>;
+  /*NOTE:
+  포스트 목록 재로딩 문제 해결을 위한 방법
+  data가 존재한다면 아무것도 하지 않는다.
+  useEffect(() => {
+    if (data) return;
+    dispatch(getPosts());
+  }, [data, dispatch]);
+
+  WHY: 이렇게 하면 로딩중 문구가 뜨지않고,
+  새로 데이터를 불러오지도 않는다.
+  if문을 작성해서 loading중이면서
+  data가 없을때만 로딩중이라는 문구가 뜨도록 한다.
+ */
+
+  if (loading && !data) return <div>로딩중...</div>;
   if (error) return <div>에러발생!</div>;
   if (!data) return null;
 

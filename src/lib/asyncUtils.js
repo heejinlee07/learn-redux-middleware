@@ -35,6 +35,80 @@ export const createPromiseThunk = (type, promiseCreator) => {
   //return thunkCreator;
 };
 
+// idSelector가 불필요할 때는 생략할 수 있도록 기본값을 만들어준다.
+// param => param : 파라마티터 자체가 id라는 의미
+// idSelector를 생략하게 되었을 때는 파라미터 자체가 id라는 의미.
+const defaultIdSelector = (param) => param;
+export const createPromiseThunkById = (type, promiseCreator, idSelector = defaultIdSelector) => {
+  // 파라미터에서 id 를 어떻게 선택 할 지 정의하는 함수입니다.
+  // 기본 값으로는 파라미터를 그대로 id로 사용합니다.
+  // 하지만 만약 파라미터가 { id: 1, details: true } 이런 형태라면
+  // 어떤 값이 id인지 정의를 해줘야한다.
+  // idSelector 를 param => param.id 이런식으로 설정 할 수 있곘죠.
+
+  const [SUCCESS, ERROR] = [`${type}_SUCCESS`, `${type}_ERROR`];
+
+  return (param) => async (dispatch) => {
+    const id = idSelector(param);
+    dispatch({ type, meta: id });
+    try {
+      const payload = await promiseCreator(param);
+      dispatch({ type: SUCCESS, payload, meta: id });
+    } catch (e) {
+      dispatch({ type: ERROR, error: true, payload: e, meta: id });
+    }
+  };
+};
+
+/*
+DEBUG:
+이미 읽었던 포스트를 다시 클릭해서 불러올 때도 로딩&새로 요청하는 문제
+TODO: post 모듈에서 관리하는 상태의 구조를 바꿔야함.
+
+** 기존구조
+{
+  posts: {
+    data,
+    loading,
+    error
+  },
+  post: {
+    data,
+    loading,
+    error,
+  }
+}
+
+post는 특정 id를 선택해서 조회하는 것인데,
+만약 다른 id를 선택하면 기존 데이터를 덮어쓰기 때문에
+데이터 재사용이 어렵다.
+
+** 새로운 구조
+post라는 객체 안에 각 id를 key로 사용해서
+특정 key에 대한 data, loading, error 상태를 가지고 있게끔 한다.
+
+  post: {
+    '1': {
+      data,
+      loading,
+      error
+    },
+    '2': {
+      data,
+      loading,
+      error
+    },
+    [id]: {
+      data,
+      loading,
+      error
+    }
+  }
+
+  FIXME: module/todos의 thunk와 reducer를 다시 작성한다.
+  -> 추후에 asyncUtils에서 리팩토링해준다.
+*/
+
 export const reducerUtils = {
   // posts 모듈에 있던 initialData
   // 초기상태 설정과 액션 타입 설정에 대한 함수
@@ -68,14 +142,22 @@ export const reducerUtils = {
 
 //비동기 관련 액션 처리 리듀서
 //type은 액션의 타입을 뜻하고, key는 상태의 key(ex.post,posts)를 뜻함.
-export const handleAsyncActions = (type, key) => {
+/*
+NOTE:
+포스트목록 재로딩 문제 해결을 위한 방법2
+handleAsyncActions 함수의 세번째 파라미터에 keepData값을 넣어준다.
+keepData의 값이 true로 주어질 때 로딩을 하면 '로딩중'이라는 문구는 아니지만
+최신의 데이터를 받아온다.
+
+*/
+export const handleAsyncActions = (type, key, keepData = false) => {
   const [SUCCESS, ERROR] = [`${type}_SUCCESS`, `${type}_ERROR`];
   return (state, action) => {
     switch (action.type) {
       case type:
         return {
           ...state,
-          [key]: reducerUtils.loading(),
+          [key]: reducerUtils.loading(keepData ? state[key].data : null),
         };
       case SUCCESS:
         return {
@@ -86,6 +168,35 @@ export const handleAsyncActions = (type, key) => {
         return {
           ...state,
           [key]: reducerUtils.error(action.payload),
+        };
+      default:
+        return state;
+    }
+  };
+};
+
+export const handleAsyncActionsById = (type, key, keepData = false) => {
+  const [SUCCESS, ERROR] = [`${type}_SUCCESS`, `${type}_ERROR`];
+  return (state, action) => {
+    const id = action.meta;
+    switch (action.type) {
+      case type:
+        return {
+          ...state,
+          //key(post or posts)에 따라 바로 업데이트하는 것이 아니라,
+          //key값에 있는 특정 id값을 가지고 업데이트해야함.
+          // state[key][id]가 만들어져있지 않을 수도 있으니까 유효성을 먼저 검사 후 data 조회
+          [key]: { ...state[key], [id]: reducerUtils.loading(keepData ? state[key][id] && state[key][id].data : null) },
+        };
+      case SUCCESS:
+        return {
+          ...state,
+          [key]: { ...state[key], [id]: reducerUtils.success(action.payload) },
+        };
+      case ERROR:
+        return {
+          ...state,
+          [key]: { ...state[key], [id]: reducerUtils.error(action.payload) },
         };
       default:
         return state;
